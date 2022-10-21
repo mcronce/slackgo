@@ -104,13 +104,63 @@ const (
 type RichTextList struct {
 	Type     RichTextElementType `json:"type"`
 	Elements []RichTextElement   `json:"elements"`
-	Style    RichTextListStyle   `json:"bullet"`
+	Style    RichTextListStyle   `json:"style"`
 	Indent   uint8               `json:"indent"`
-	//Border  uint8               `json:"border"`
+	//Border   uint8               `json:"border"`
 }
 
 func (l RichTextList) RichTextElementType() RichTextElementType {
 	return l.Type
+}
+
+func (e *RichTextList) UnmarshalJSON(b []byte) error {
+	var raw struct {
+		Type        RichTextElementType `json:"type"`
+		RawElements []json.RawMessage   `json:"elements"`
+		Style       RichTextListStyle   `json:"style"`
+		Indent      uint8               `json:"indent"`
+		//Border      uint8               `json:"border"`
+	}
+	if string(b) == "{}" {
+		return nil
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	elems := make([]RichTextElement, 0, len(raw.RawElements))
+	for _, r := range raw.RawElements {
+		var s struct {
+			Type RichTextElementType `json:"type"`
+		}
+		if err := json.Unmarshal(r, &s); err != nil {
+			return err
+		}
+		var elem RichTextElement
+		switch s.Type {
+		case RTESection, RTEPreformatted, RTEQuote:
+			elem = &RichTextSection{}
+		case RTEList:
+			elem = &RichTextList{}
+		default:
+			elems = append(elems, &RichTextUnknown{
+				Type: s.Type,
+				Raw:  string(r),
+			})
+			continue
+		}
+		if err := json.Unmarshal(r, &elem); err != nil {
+			return err
+		}
+		elems = append(elems, elem)
+	}
+	*e = RichTextList{
+		Type:     raw.Type,
+		Elements: elems,
+		Style:    raw.Style,
+		Indent:   raw.Indent,
+		//Border:   raw.Border
+	}
+	return nil
 }
 
 type RichTextSection struct {
