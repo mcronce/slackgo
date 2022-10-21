@@ -104,7 +104,7 @@ const (
 type RichTextList struct {
 	Type     RichTextElementType `json:"type"`
 	Elements []RichTextElement   `json:"elements"`
-	Style    string              `json:"bullet"`
+	Style    RichTextListStyle   `json:"bullet"`
 	Indent   uint8               `json:"indent"`
 	//Border  uint8               `json:"border"`
 }
