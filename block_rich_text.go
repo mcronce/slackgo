@@ -40,6 +40,8 @@ func (e *RichTextBlock) UnmarshalJSON(b []byte) error {
 		switch s.Type {
 		case RTESection, RTEPreformatted, RTEQuote:
 			elem = &RichTextSection{}
+		case RTEList:
+			elem = &RichTextList{}
 		default:
 			elems = append(elems, &RichTextUnknown{
 				Type: s.Type,
@@ -90,6 +92,25 @@ type RichTextUnknown struct {
 
 func (u RichTextUnknown) RichTextElementType() RichTextElementType {
 	return u.Type
+}
+
+type RichTextListStyle string
+
+const (
+	RTLBullet  RichTextListStyle = "bullet"
+	RTLOrdered RichTextListStyle = "ordered"
+)
+
+type RichTextList struct {
+	Type     RichTextElementType `json:"type"`
+	Elements []RichTextElement   `json:"elements"`
+	Style    string              `json:"bullet"`
+	Indent   uint8               `json:"indent"`
+	//Border  uint8               `json:"border"`
+}
+
+func (l RichTextList) RichTextElementType() RichTextElementType {
+	return l.Type
 }
 
 type RichTextSection struct {
@@ -179,6 +200,7 @@ const (
 	RTSEDate      RichTextSectionElementType = "date"
 	RTSEEmoji     RichTextSectionElementType = "emoji"
 	RTSELink      RichTextSectionElementType = "link"
+	RTSESection   RichTextSectionElementType = "rich_text_section"
 	RTSETeam      RichTextSectionElementType = "team"
 	RTSEText      RichTextSectionElementType = "text"
 	RTSEUser      RichTextSectionElementType = "user"
@@ -291,6 +313,10 @@ func NewRichTextSectionLinkElement(url, text string, style *RichTextSectionTextS
 		Text:  text,
 		Style: style,
 	}
+}
+
+func (r RichTextSection) RichTextSectionElementType() RichTextSectionElementType {
+	return RichTextSectionElementType(r.Type)
 }
 
 type RichTextSectionTeamElement struct {
